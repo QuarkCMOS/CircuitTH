@@ -19,7 +19,7 @@ export default function App() {
 
   // ── Simulation ────────────────────────────────────────────────
   const [simConfig, setSimConfig] = useState<SimConfig>(defaultConfig);
-  const [result, setResult] = useState<SimulationResult | null>(null);
+  const [, setResult] = useState<SimulationResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [consoleOpen, setConsoleOpen] = useState(false);
   const [consoleLines, setConsoleLines] = useState<string[]>([]);
@@ -42,11 +42,11 @@ export default function App() {
     setSelectedComponent(null);
   }
 
-  function deleteSelectedWire() {
-    if (!selectedWire) return;
-    setWires(prev => prev.filter(w => w.id !== selectedWire));
-    setSelectedWire(null);
-  }
+  //function deleteSelectedWire() {
+  // if (!selectedWire) return;
+  //  setWires(prev => prev.filter(w => w.id !== selectedWire));
+  //  setSelectedWire(null);
+  //}
 
   async function runSimulation() {
     // Build netlist with sim command based on config
