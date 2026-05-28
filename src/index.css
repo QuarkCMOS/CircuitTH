@@ -1,0 +1,243 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+}
+
+.app {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  gap: 0;
+}
+
+/* ── Right column: fixed width, full height, three stacked panels ── */
+.rightPanel {
+  width: 260px;
+  min-width: 260px;
+  max-width: 260px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-left: 1px solid #ddd;
+  background: #f5f5f5;
+}
+
+.netlistPanel {
+  /* takes remaining space after Properties */
+  flex: 1;
+  min-height: 0;          /* allow flex child to shrink */
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  box-sizing: border-box;
+  border-top: 1px solid #ddd;
+  overflow: hidden;
+}
+
+.netlistPanel h3 {
+  margin: 0 0 8px 0;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.netlistPanel textarea {
+  flex: 1;
+  min-height: 0;          /* crucial: let textarea shrink inside flex */
+  resize: none;
+  font-family: monospace;
+  font-size: 11px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 6px;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.netlistPanel button {
+  flex-shrink: 0;
+  margin-top: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  background: #ff8c00;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.netlistPanel button:hover {
+  background: #e07000;
+}
+
+.sidebar {
+  width: 200px;
+  min-width: 200px;
+  max-width: 200px;
+  height: 100vh;
+  background: #1e1e1e;
+  color: white;
+  padding: 16px;
+  box-sizing: border-box;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+.sidebar h2 {
+  margin-top: 0;
+  font-size: 16px;
+}
+
+.tool {
+  background: #333;
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: center;
+  border: 2px solid transparent;
+  transition: all 0.2s;
+}
+
+.tool:hover {
+  background: #444;
+  border-color: #888;
+}
+
+.tool.active {
+  background: #00cc44;
+  color: #000;
+  font-weight: bold;
+  border-color: #00aa33;
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.canvas-section {
+  flex: 1;
+  display: flex;
+  gap: 0;
+  min-height: 0;
+}
+
+canvas {
+  flex: 1;
+  min-width: 0;
+  display: block;
+}
+
+.properties {
+  flex-shrink: 0;
+  height: 280px;
+  overflow-y: auto;
+  padding: 14px;
+  box-sizing: border-box;
+}
+
+.properties h3 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+}
+
+.properties label {
+  display: block;
+  font-size: 12px;
+  font-weight: bold;
+  margin-top: 12px;
+  margin-bottom: 4px;
+  color: #333;
+}
+
+.properties input {
+  width: 100%;
+  padding: 6px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+  font-size: 12px;
+}
+
+.properties p {
+  font-size: 12px;
+  color: #666;
+}
+
+.button-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.button-group button {
+  padding: 6px 8px;
+  font-size: 11px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.button-group button:hover {
+  background: #e8e8e8;
+  border-color: #999;
+}
+
+.button-group button.active {
+  background: #00cc44;
+  color: white;
+  border-color: #00aa33;
+  font-weight: bold;
+}
+
+.deleteBtn {
+  width: 100%;
+  padding: 8px;
+  margin-top: 16px;
+  background: #ff4444;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: bold;
+  transition: all 0.2s;
+}
+
+.deleteBtn:hover {
+  background: #cc0000;
+}
+
+
+.activeTool {
+  background: #00cc44 !important;
+  color: #000 !important;
+  font-weight: bold;
+  border-color: #00aa33 !important;
+}
+
+.sidebar button {
+  display: block;
+  width: 100%;
+  background: #333;
+  color: white;
+  padding: 10px;
+  margin-bottom: 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  font-size: 13px;
+  transition: all 0.15s;
+}
+
+.sidebar button:hover {
+  background: #444;
+  border-color: #888;
+}
