@@ -5,17 +5,24 @@ body {
 
 .app {
   display: flex;
+  flex-direction: column;
   height: 100vh;
   overflow: hidden;
   gap: 0;
 }
 
-/* ── Right column: fixed width, full height, three stacked panels ── */
+.content {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ── Right column: fixed width, full height, two stacked panels ── */
 .rightPanel {
   width: 260px;
   min-width: 260px;
   max-width: 260px;
-  height: 100vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -23,59 +30,11 @@ body {
   background: #f5f5f5;
 }
 
-.netlistPanel {
-  /* takes remaining space after Properties */
-  flex: 1;
-  min-height: 0;          /* allow flex child to shrink */
-  display: flex;
-  flex-direction: column;
-  padding: 12px;
-  box-sizing: border-box;
-  border-top: 1px solid #ddd;
-  overflow: hidden;
-}
-
-.netlistPanel h3 {
-  margin: 0 0 8px 0;
-  font-size: 13px;
-  flex-shrink: 0;
-}
-
-.netlistPanel textarea {
-  flex: 1;
-  min-height: 0;          /* crucial: let textarea shrink inside flex */
-  resize: none;
-  font-family: monospace;
-  font-size: 11px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  padding: 6px;
-  box-sizing: border-box;
-  width: 100%;
-}
-
-.netlistPanel button {
-  flex-shrink: 0;
-  margin-top: 8px;
-  padding: 6px 10px;
-  font-size: 12px;
-  background: #ff8c00;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.netlistPanel button:hover {
-  background: #e07000;
-}
 
 .sidebar {
   width: 200px;
   min-width: 200px;
   max-width: 200px;
-  height: 100vh;
   background: #1e1e1e;
   color: white;
   padding: 16px;

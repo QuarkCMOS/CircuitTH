@@ -51,9 +51,17 @@ export function generateNetlist(components: CircuitComponent[], wires: Wire[]) {
     }
   }
 
-  // 4. Assign node names
+  // 4. Pre-assign node "0" (GND) to any pin belonging to a GND component
+  //    so all nets connected to GND become "0" automatically.
   const nodeMap = new Map<string, string>();
   let counter = 1;
+
+  for (const c of components) {
+    if (c.type === 'GND') {
+      const root = uf.find(ptKey(c.pins[0].x, c.pins[0].y));
+      nodeMap.set(root, '0');
+    }
+  }
 
   function getNode(pin: Pin) {
     const root = uf.find(ptKey(pin.x, pin.y));
@@ -61,9 +69,10 @@ export function generateNetlist(components: CircuitComponent[], wires: Wire[]) {
     return nodeMap.get(root)!;
   }
 
-  // 5. Build lines
+  // 5. Build lines (GND is not a SPICE element — it only sets node names)
   const lines: string[] = [];
   for (const c of components) {
+    if (c.type === 'GND') continue;
     const n1 = getNode(c.pins[0]);
     const n2 = getNode(c.pins[1]);
     if (c.type === 'R') lines.push(`${c.id} ${n1} ${n2} ${c.value}`);

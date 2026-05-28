@@ -14,7 +14,8 @@ function snap(v: number) {
   return Math.round(v / GRID) * GRID;
 }
 
-function updatePins(x: number, y: number, rotation: number): Pin[] {
+function updatePins(x: number, y: number, rotation: number, type?: string): Pin[] {
+  if (type === 'GND') return [{ x, y }]; // single pin at center top
   const d = GRID * 2;
   switch (rotation) {
     case 90:  return [{ x, y: y - d }, { x, y: y + d }];
@@ -166,6 +167,26 @@ export default function Canvas({
     }
   }
 
+  function drawGnd(ctx: CanvasRenderingContext2D) {
+    // Vertical stem from pin (top) down
+    const stemLen = GRID * 0.8;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(0, stemLen);
+    ctx.stroke();
+
+    // Three horizontal bars, decreasing width
+    const bars = [GRID * 1.0, GRID * 0.65, GRID * 0.3];
+    const spacing = GRID * 0.38;
+    bars.forEach((halfW, i) => {
+      const y = stemLen + i * spacing;
+      ctx.beginPath();
+      ctx.moveTo(-halfW, y);
+      ctx.lineTo(halfW, y);
+      ctx.stroke();
+    });
+  }
+
   function drawResistor(ctx: CanvasRenderingContext2D) {
     const d = GRID * 2, hw = GRID, hh = GRID * 0.6;
     ctx.beginPath(); ctx.moveTo(-d, 0); ctx.lineTo(-hw, 0); ctx.stroke();
@@ -181,8 +202,8 @@ export default function Canvas({
     ctx.fillStyle = ctx.strokeStyle as string;
     ctx.font = `bold ${GRID * 0.7}px monospace`;
     ctx.textAlign = 'center';
-    ctx.fillText('+', GRID * 0.35, GRID * 0.25);
-    ctx.fillText('−', -GRID * 0.35, GRID * 0.25);
+    ctx.fillText('-', GRID * 0.35, GRID * 0.25);
+    ctx.fillText('+', -GRID * 0.35, GRID * 0.25);
   }
 
   function drawComponent(ctx: CanvasRenderingContext2D, c: CircuitComponent, isGhost = false) {
@@ -195,13 +216,17 @@ export default function Canvas({
     ctx.lineWidth = 2;
     if (c.type === 'R') drawResistor(ctx);
     if (c.type === 'V') drawVoltageSource(ctx);
+    if (c.type === 'GND') drawGnd(ctx);
     ctx.restore();
 
     ctx.globalAlpha = isGhost ? 0.5 : 1;
     ctx.fillStyle = isGhost ? 'rgba(0,80,200,0.7)' : '#111';
     ctx.font = '11px monospace';
     ctx.textAlign = 'left';
-    ctx.fillText(`${c.id} ${c.value}`, c.x - GRID, c.y - GRID * 1.6);
+    // GND has no value label; only show id for non-GND
+    if (c.type !== 'GND') {
+      ctx.fillText(`${c.id} ${c.value}`, c.x - GRID, c.y - GRID * 1.6);
+    }
 
     if (!isGhost) {
       for (const p of c.pins) {
@@ -282,8 +307,8 @@ export default function Canvas({
         x: sx, y: sy,
         rotation: ghostRotation,
         flipX: false, flipY: false,
-        value: selectedTool === 'R' ? '1k' : '10',
-        pins: updatePins(sx, sy, ghostRotation),
+        value: selectedTool === 'R' ? '1k' : selectedTool === 'V' ? '10' : '',
+        pins: updatePins(sx, sy, ghostRotation, selectedTool),
       };
       drawComponent(ctx, ghost, true);
     }
@@ -369,8 +394,8 @@ export default function Canvas({
         type, x: swx, y: swy,
         rotation: ghostRotation,
         flipX: false, flipY: false,
-        value: type === 'R' ? '1k' : '10',
-        pins: updatePins(swx, swy, ghostRotation),
+        value: type === 'R' ? '1k' : type === 'V' ? '10' : '',
+        pins: updatePins(swx, swy, ghostRotation, type),
       }]);
       if (!e.shiftKey) setSelectedTool(null);
       return;
@@ -442,7 +467,7 @@ export default function Canvas({
       setComponents(prev =>
         prev.map(c =>
           c.uuid !== draggingId ? c
-            : { ...c, x: sx, y: sy, pins: updatePins(sx, sy, c.rotation || 0) }
+            : { ...c, x: sx, y: sy, pins: updatePins(sx, sy, c.rotation || 0, c.type) }
         )
       );
     }

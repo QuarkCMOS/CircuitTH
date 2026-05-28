@@ -1,6 +1,7 @@
 export type ComponentType =
   | 'R'
-  | 'V';
+  | 'V'
+  | 'GND';
 
 export interface Point {
   x: number;
