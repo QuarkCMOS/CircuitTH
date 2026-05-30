@@ -1,4 +1,4 @@
-import type { CircuitComponent, Pin, Wire } from '../types';
+import type { CircuitComponent, Pin, VSourceParams, Wire } from '../types';
 import { UnionFind } from './unionFind';
 
 function ptKey(x: number, y: number) { return `${x},${y}`; }
@@ -9,6 +9,20 @@ function distToSegment(px: number, py: number, x1: number, y1: number, x2: numbe
   if (len2 === 0) return Math.sqrt(A * A + B * B);
   const t = Math.max(0, Math.min(1, (A * C + B * D) / len2));
   return Math.sqrt((px - (x1 + t * C)) ** 2 + (py - (y1 + t * D)) ** 2);
+}
+
+/** Build the SPICE value string for a voltage source */
+function vSourceValue(params: VSourceParams): string {
+  switch (params.type) {
+    case 'DC':
+      return `DC ${params.dc}`;
+    case 'AC':
+      return `DC ${params.dc} AC ${params.ac_mag} ${params.ac_phase}`;
+    case 'PULSE':
+      return `PULSE(${params.v1} ${params.v2} ${params.td} ${params.tr} ${params.tf} ${params.pw} ${params.per})`;
+    case 'SIN':
+      return `SIN(${params.vo} ${params.va} ${params.freq} ${params.td} ${params.theta} ${params.phase})`;
+  }
 }
 
 export function generateNetlist(components: CircuitComponent[], wires: Wire[]) {
@@ -22,7 +36,7 @@ export function generateNetlist(components: CircuitComponent[], wires: Wire[]) {
     }
   }
 
-  // 2. Wire-to-wire T-junction: any point of wireA that lies on a segment of wireB
+  // 2. Wire-to-wire T-junction
   for (const wireA of wires) {
     for (const pt of wireA.points) {
       for (const wireB of wires) {
@@ -37,7 +51,7 @@ export function generateNetlist(components: CircuitComponent[], wires: Wire[]) {
     }
   }
 
-  // 3. Pin-to-wire: pin lying on a wire segment
+  // 3. Pin-to-wire
   for (const c of components) {
     for (const pin of c.pins) {
       for (const wire of wires) {
@@ -51,11 +65,9 @@ export function generateNetlist(components: CircuitComponent[], wires: Wire[]) {
     }
   }
 
-  // 4. Pre-assign node "0" (GND) to any pin belonging to a GND component
-  //    so all nets connected to GND become "0" automatically.
+  // 4. Pre-assign node "0" to GND
   const nodeMap = new Map<string, string>();
   let counter = 1;
-
   for (const c of components) {
     if (c.type === 'GND') {
       const root = uf.find(ptKey(c.pins[0].x, c.pins[0].y));
@@ -69,14 +81,20 @@ export function generateNetlist(components: CircuitComponent[], wires: Wire[]) {
     return nodeMap.get(root)!;
   }
 
-  // 5. Build lines (GND is not a SPICE element — it only sets node names)
+  // 5. Build lines
   const lines: string[] = [];
   for (const c of components) {
     if (c.type === 'GND') continue;
     const n1 = getNode(c.pins[0]);
     const n2 = getNode(c.pins[1]);
-    if (c.type === 'R') lines.push(`${c.id} ${n1} ${n2} ${c.value}`);
-    if (c.type === 'V') lines.push(`${c.id} ${n1} ${n2} DC ${c.value}`);
+
+    if (c.type === 'R') {
+      lines.push(`${c.id} ${n1} ${n2} ${c.value}`);
+    }
+    if (c.type === 'V') {
+      const params = c.vsource ?? { type: 'DC' as const, dc: c.value || '0' };
+      lines.push(`${c.id} ${n1} ${n2} ${vSourceValue(params)}`);
+    }
   }
 
   lines.push('', '.op', '.end');

@@ -1,9 +1,10 @@
 import { useRef, useState } from 'react';
 import './App.css';
-import Sidebar from './components/Sidebar';
+import Sidebar from './components/componentToolbar';
 import Canvas from './components/Canvas';
 import PropertiesPanel from './components/PropertiesPanel';
 import Toolbar, { defaultConfig } from './components/Toolbar';
+import Waveform from './components/Waveform';
 import type { SimConfig } from './components/Toolbar';
 import type { CircuitComponent, Wire } from './types';
 import { generateNetlist } from './utils/netlist';
@@ -17,17 +18,16 @@ export default function App() {
   const [selectedWire, setSelectedWire] = useState<string | null>(null);
   const [selectedTool, setSelectedTool] = useState<string | null>(null);
 
-  // ── Simulation ────────────────────────────────────────────────
   const [simConfig, setSimConfig] = useState<SimConfig>(defaultConfig);
-  const [, setResult] = useState<SimulationResult | null>(null);
+  const [simResult, setSimResult] = useState<SimulationResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [consoleOpen, setConsoleOpen] = useState(false);
   const [consoleLines, setConsoleLines] = useState<string[]>([]);
+  const [waveformOpen, setWaveformOpen] = useState(false);
   const consoleEndRef = useRef<HTMLDivElement>(null);
 
   function log(line: string) {
     setConsoleLines(prev => [...prev, line]);
-    // Scroll to bottom after paint
     setTimeout(() => consoleEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 0);
   }
 
@@ -42,16 +42,8 @@ export default function App() {
     setSelectedComponent(null);
   }
 
-  //function deleteSelectedWire() {
-  // if (!selectedWire) return;
-  //  setWires(prev => prev.filter(w => w.id !== selectedWire));
-  //  setSelectedWire(null);
-  //}
-
   async function runSimulation() {
-    // Build netlist with sim command based on config
     let netlistBase = generateNetlist(components, wires);
-    // Replace .op/.end with the correct analysis command
     const { mode } = simConfig;
     let simLine = '.op';
     if (mode === 'dc') {
@@ -75,7 +67,7 @@ export default function App() {
     try {
       const engine = await getEngine();
       const res = engine.simulate(netlist);
-      setResult(res);
+      setSimResult(res);
 
       if (!res.success) {
         log('✗ Error: ' + res.error_msg);
@@ -153,116 +145,134 @@ export default function App() {
         onConfigChange={setSimConfig}
         consoleOpen={consoleOpen}
         onToggleConsole={() => setConsoleOpen(v => !v)}
+        waveformOpen={waveformOpen}
+        onToggleWaveform={() => setWaveformOpen(v => !v)}
       />
 
+      <Sidebar selectedTool={selectedTool} setSelectedTool={setSelectedTool} />
+
+      {/* Main content area below toolbar */}
       <div className="content">
-        <Sidebar selectedTool={selectedTool} setSelectedTool={setSelectedTool} />
 
-        <div className="main">
-          <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', position: 'relative' }}>
-            <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>
-              <Canvas
-                components={components}
-                wires={wires}
-                selectedComponent={selectedComponent}
-                selectedWire={selectedWire}
-                selectedTool={selectedTool}
-                setSelectedTool={setSelectedTool}
-                setComponents={setComponents}
-                setWires={setWires}
-                setSelectedComponent={setSelectedComponent}
-                setSelectedWire={setSelectedWire}
-              />
-            </div>
+        {/* Left: Waveform panel (full height, fixed width) */}
+        {waveformOpen && (
+          <Waveform
+            result={simResult}
+            onClose={() => setWaveformOpen(false)}
+          />
+        )}
 
-            {consoleOpen && (
+        {/* Right: Canvas + Console stacked, fills remaining width */}
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+
+          {/* Canvas fills all available height */}
+          <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+            <Canvas
+              components={components}
+              wires={wires}
+              selectedComponent={selectedComponent}
+              selectedWire={selectedWire}
+              selectedTool={selectedTool}
+              setSelectedTool={setSelectedTool}
+              setComponents={setComponents}
+              setWires={setWires}
+              setSelectedComponent={setSelectedComponent}
+              setSelectedWire={setSelectedWire}
+            />
+          </div>
+
+          {/* Console sits below canvas */}
+          {consoleOpen && (
+            <div style={{
+              height: '38%',
+              minHeight: 120,
+              maxHeight: '60%',
+              background: 'rgba(15, 17, 23, 0.97)',
+              borderTop: '2px solid #2563eb',
+              display: 'flex',
+              flexDirection: 'column',
+              flexShrink: 0,
+              boxShadow: '0 -4px 32px rgba(0,0,0,0.5)',
+            }}>
               <div style={{
-                height: '38%',
-                minHeight: 120,
-                maxHeight: '60%',
-                background: '#0f1117',
-                borderTop: '2px solid #2563eb',
                 display: 'flex',
-                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '4px 12px',
+                background: 'rgba(26, 29, 39, 0.95)',
+                borderBottom: '1px solid #2a2d3a',
                 flexShrink: 0,
               }}>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '4px 12px',
-                  background: '#1a1d27',
-                  borderBottom: '1px solid #2a2d3a',
-                  flexShrink: 0,
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{
-                      width: 7, height: 7, borderRadius: '50%',
-                      background: loading ? '#facc15' : consoleLines.some(l => l.startsWith('✗')) ? '#ef5350' : '#22c55e',
-                      display: 'inline-block',
-                    }} />
-                    <span style={{ color: '#90caf9', fontWeight: 600, fontSize: 13, fontFamily: 'monospace' }}>
-                      Console
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', gap: 4 }}>
-                    <button
-                      onClick={() => setConsoleLines([])}
-                      title="Clear"
-                      style={{ background: 'none', border: 'none', color: '#555', cursor: 'pointer', fontSize: 12, padding: '2px 8px', borderRadius: 4 }}
-                      onMouseEnter={e => e.currentTarget.style.color = '#aaa'}
-                      onMouseLeave={e => e.currentTarget.style.color = '#555'}
-                    >
-                      Clear
-                    </button>
-                    <button
-                      onClick={() => setConsoleOpen(false)}
-                      title="Close"
-                      style={{ background: 'none', border: 'none', color: '#555', cursor: 'pointer', fontSize: 16, padding: '2px 8px', borderRadius: 4, lineHeight: 1 }}
-                      onMouseEnter={e => e.currentTarget.style.color = '#aaa'}
-                      onMouseLeave={e => e.currentTarget.style.color = '#555'}
-                    >
-                      ✕
-                    </button>
-                  </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{
+                    width: 7, height: 7, borderRadius: '50%',
+                    background: loading ? '#facc15' : consoleLines.some(l => l.startsWith('✗')) ? '#ef5350' : '#22c55e',
+                    display: 'inline-block',
+                  }} />
+                  <span style={{ color: '#90caf9', fontWeight: 600, fontSize: 13, fontFamily: 'monospace' }}>
+                    Console
+                  </span>
                 </div>
-
-                <div style={{
-                  flex: 1,
-                  minHeight: 0,
-                  overflowY: 'auto',
-                  padding: '8px 14px',
-                  fontFamily: 'monospace',
-                  fontSize: 12,
-                  lineHeight: 1.7,
-                }}>
-                  {consoleLines.map((line, i) => {
-                    const color =
-                      line.startsWith('✓') ? '#4ade80' :
-                      line.startsWith('✗') ? '#f87171' :
-                      line.startsWith('>') ? '#93c5fd' :
-                      line.startsWith('──') ? '#fb923c' :
-                      '#d1d5db';
-                    return (
-                      <div key={i} style={{ color, whiteSpace: 'pre' }}>
-                        {line || '\u00a0'}
-                      </div>
-                    );
-                  })}
-                  <div ref={consoleEndRef} />
+                <div style={{ display: 'flex', gap: 4 }}>
+                  <button
+                    onClick={() => setConsoleLines([])}
+                    title="Clear"
+                    style={{ background: 'none', border: 'none', color: '#555', cursor: 'pointer', fontSize: 12, padding: '2px 8px', borderRadius: 4 }}
+                    onMouseEnter={e => e.currentTarget.style.color = '#aaa'}
+                    onMouseLeave={e => e.currentTarget.style.color = '#555'}
+                  >
+                    Clear
+                  </button>
+                  <button
+                    onClick={() => setConsoleOpen(false)}
+                    title="Close"
+                    style={{ background: 'none', border: 'none', color: '#555', cursor: 'pointer', fontSize: 16, padding: '2px 8px', borderRadius: 4, lineHeight: 1 }}
+                    onMouseEnter={e => e.currentTarget.style.color = '#aaa'}
+                    onMouseLeave={e => e.currentTarget.style.color = '#555'}
+                  >
+                    ✕
+                  </button>
                 </div>
               </div>
-            )}
-          </div>
+
+              <div style={{
+                flex: 1,
+                minHeight: 0,
+                overflowY: 'auto',
+                padding: '8px 14px',
+                fontFamily: 'monospace',
+                fontSize: 12,
+                lineHeight: 1.7,
+              }}>
+                {consoleLines.map((line, i) => {
+                  const color =
+                    line.startsWith('✓') ? '#4ade80' :
+                    line.startsWith('✗') ? '#f87171' :
+                    line.startsWith('>') ? '#93c5fd' :
+                    line.startsWith('──') ? '#fb923c' :
+                    '#d1d5db';
+                  return (
+                    <div key={i} style={{ color, whiteSpace: 'pre' }}>
+                      {line || '\u00a0'}
+                    </div>
+                  );
+                })}
+                <div ref={consoleEndRef} />
+              </div>
+            </div>
+          )}
         </div>
 
-        <div className="rightPanel">
-          <PropertiesPanel
-            selected={selectedComponent}
-            onUpdate={updateComponent}
-            onDelete={deleteSelectedComponent}
-          />
-        </div>
+        {/* Right Panel - Properties */}
+        {selectedComponent && (
+          <div className="rightPanel">
+            <PropertiesPanel
+              selected={selectedComponent}
+              onUpdate={updateComponent}
+              onDelete={deleteSelectedComponent}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

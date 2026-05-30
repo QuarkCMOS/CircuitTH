@@ -39,12 +39,15 @@ interface Props {
   onConfigChange: (cfg: SimConfig) => void;
   consoleOpen: boolean;
   onToggleConsole: () => void;
+  waveformOpen: boolean;
+  onToggleWaveform: () => void;
 }
 
 export default function Toolbar({
   loading, onRun,
   config, onConfigChange,
   consoleOpen, onToggleConsole,
+  waveformOpen, onToggleWaveform,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<SimConfig>(config);
@@ -181,6 +184,26 @@ export default function Toolbar({
         </span>
 
         <div style={{ flex: 1 }} />
+
+        {/* Waveform toggle */}
+        <button
+          onClick={onToggleWaveform}
+          title="Toggle Waveform"
+          style={{
+            ...btnBase,
+            borderColor: waveformOpen ? '#2563eb' : '#3a3d4a',
+            background: waveformOpen ? '#1e2a4a' : '#1e2030',
+            color: waveformOpen ? '#60a5fa' : '#ccc',
+          }}
+          onMouseEnter={e => { if (!waveformOpen) e.currentTarget.style.borderColor = '#555'; }}
+          onMouseLeave={e => { if (!waveformOpen) e.currentTarget.style.borderColor = waveformOpen ? '#2563eb' : '#3a3d4a'; }}
+        >
+          {/* Waveform icon */}
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+          Waveform
+        </button>
 
         {/* Console toggle */}
         <button

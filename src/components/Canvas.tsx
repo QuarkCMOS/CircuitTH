@@ -144,29 +144,6 @@ export default function Canvas({
 
   // ─── Drawing ──────────────────────────────────────────────────────────────
 
-  function drawGrid(ctx: CanvasRenderingContext2D, w: number, h: number) {
-    const { offsetX, offsetY, scale } = viewport;
-    // World coordinates of visible corners
-    const x0 = (-offsetX / scale);
-    const y0 = (-offsetY / scale);
-    const x1 = (w - offsetX) / scale;
-    const y1 = (h - offsetY) / scale;
-
-    const startX = Math.floor(x0 / GRID) * GRID;
-    const startY = Math.floor(y0 / GRID) * GRID;
-
-    ctx.fillStyle = '#bbb';
-    for (let wx = startX; wx <= x1; wx += GRID) {
-      for (let wy = startY; wy <= y1; wy += GRID) {
-        const sx = wx * scale + offsetX;
-        const sy = wy * scale + offsetY;
-        ctx.beginPath();
-        ctx.arc(sx, sy, Math.max(0.8, scale), 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-  }
-
   function drawGnd(ctx: CanvasRenderingContext2D) {
     // Vertical stem from pin (top) down
     const stemLen = GRID * 0.8;
@@ -276,8 +253,8 @@ export default function Canvas({
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Draw grid in screen-space (handles dots at all zoom levels)
-    drawGrid(ctx, canvas.width, canvas.height);
+    // Grid rendering disabled for better performance on web
+    // drawGrid(ctx, canvas.width, canvas.height);
 
     // Apply viewport transform for all world-space elements
     ctx.save();
@@ -531,12 +508,31 @@ export default function Canvas({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [drawingWire, selectedTool, selectedComponent, selectedWire, ghostRotation, viewport]);
 
-  // Resize canvas to CSS size and re-render whenever state changes
+  // Resize canvas to match its container using ResizeObserver
+  useEffect(() => {
+    const canvas = canvasRef.current!;
+    const syncSize = () => {
+      const rect = canvas.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) {
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+        render();
+      }
+    };
+    const ro = new ResizeObserver(syncSize);
+    ro.observe(canvas);
+    syncSize();
+    return () => ro.disconnect();
+  }, []);
+
+  // Re-render whenever state changes (size is kept in sync by ResizeObserver)
   useEffect(() => {
     const canvas = canvasRef.current!;
     const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width || 800;
-    canvas.height = rect.height || window.innerHeight;
+    if (rect.width > 0 && rect.height > 0) {
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+    }
     render();
   }, [components, wires, selectedComponent, selectedWire, mousePos, tempWire, drawingWire, selectedTool, ghostRotation, viewport]);
 
@@ -552,7 +548,7 @@ export default function Canvas({
   return (
     <canvas
       ref={canvasRef}
-      style={{ cursor: getCursor(), display: 'block', flex: 1 }}
+      style={{ cursor: getCursor(), display: 'block', width: '100%', height: '100%' }}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
